@@ -18,7 +18,7 @@ fun OpenGLImageScreen(modifier: Modifier = Modifier) {
             override fun onSurfaceTextureAvailable(
                 surface: SurfaceTexture, width: Int, height: Int
             ) {
-                viewModel.loadImage(surface)
+                viewModel.loadLittleCatImage(surface)
             }
 
             override fun onSurfaceTextureSizeChanged(

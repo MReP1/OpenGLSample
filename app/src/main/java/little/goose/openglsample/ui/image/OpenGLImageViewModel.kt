@@ -27,7 +27,7 @@ class OpenGLImageViewModel(application: Application) : AndroidViewModel(applicat
     private var textureId = 0
     private var programId = 0
 
-    fun loadImage(surfaceTexture: SurfaceTexture) {
+    fun loadLittleCatImage(surfaceTexture: SurfaceTexture) {
         // 获取EGLDisplay
         eglDisplay = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY)
 

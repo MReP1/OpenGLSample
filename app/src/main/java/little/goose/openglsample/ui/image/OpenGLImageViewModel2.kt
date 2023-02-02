@@ -23,7 +23,7 @@ class OpenGLImageViewModel2(application: Application): AndroidViewModel(applicat
     private var eglSystem: EglSystem? = null
     private var imageId = 0
 
-    fun loadImage(textureView: TextureView) {
+    fun loadLittleCatImage(textureView: TextureView) {
         eglSystem = EglSystem.createSurface(textureView.surfaceTexture!!)
         eglSystem?.withCurrent {
             imageId = GLUtils.generate2DTextureId(
