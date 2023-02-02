@@ -2,9 +2,9 @@ package little.goose.openglsample.ui.image
 
 import android.app.Application
 import android.graphics.BitmapFactory
+import android.graphics.SurfaceTexture
 import android.opengl.*
 import android.opengl.EGLExt.EGL_RECORDABLE_ANDROID
-import android.view.TextureView
 import androidx.lifecycle.AndroidViewModel
 import little.goose.openglsample.R
 import java.nio.ByteBuffer
@@ -27,7 +27,7 @@ class OpenGLImageViewModel(application: Application) : AndroidViewModel(applicat
     private var textureId = 0
     private var programId = 0
 
-    fun loadImage(textureView: TextureView) {
+    fun loadImage(surfaceTexture: SurfaceTexture) {
         // 获取EGLDisplay
         eglDisplay = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY)
 
@@ -54,7 +54,7 @@ class OpenGLImageViewModel(application: Application) : AndroidViewModel(applicat
 
         // 创建EGLSurface
         eglSurface = EGL14.eglCreateWindowSurface(
-            eglDisplay, eglConfig, textureView.surfaceTexture, intArrayOf(EGL14.EGL_NONE), 0
+            eglDisplay, eglConfig, surfaceTexture, intArrayOf(EGL14.EGL_NONE), 0
         )
 
         // 进入GL上下文
