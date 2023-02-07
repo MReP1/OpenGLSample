@@ -9,7 +9,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun OpenGLImageScreen(modifier: Modifier = Modifier) {
-    val viewModel = viewModel<OpenGLImageViewModel>()
+    val viewModel = viewModel<OpenGLImageViewModel3>()
     AndroidView(
         factory = { TextureView(it) },
         modifier = modifier
@@ -18,7 +18,7 @@ fun OpenGLImageScreen(modifier: Modifier = Modifier) {
             override fun onSurfaceTextureAvailable(
                 surface: SurfaceTexture, width: Int, height: Int
             ) {
-                viewModel.loadLittleCatImage(surface)
+                viewModel.loadLittleCatImage(textureView)
             }
 
             override fun onSurfaceTextureSizeChanged(
