@@ -5,8 +5,6 @@ import android.graphics.BitmapFactory
 import android.graphics.SurfaceTexture
 import android.opengl.*
 import android.opengl.EGLExt.EGL_RECORDABLE_ANDROID
-import android.util.Log
-import android.view.TextureView
 import androidx.lifecycle.AndroidViewModel
 import little.goose.openglsample.R
 import java.nio.ByteBuffer
@@ -29,7 +27,7 @@ class OpenGLImageViewModel3(application: Application) : AndroidViewModel(applica
     private var textureId = 0
     private var programId = 0
 
-    fun loadLittleCatImage(textureView: TextureView) {
+    fun loadLittleCatImage(surfaceTexture: SurfaceTexture, width: Int, height: Int) {
         // 获取EGLDisplay
         eglDisplay = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY)
 
@@ -56,7 +54,7 @@ class OpenGLImageViewModel3(application: Application) : AndroidViewModel(applica
 
         // 创建EGLSurface
         eglSurface = EGL14.eglCreateWindowSurface(
-            eglDisplay, eglConfig, textureView.surfaceTexture, intArrayOf(EGL14.EGL_NONE), 0
+            eglDisplay, eglConfig, surfaceTexture, intArrayOf(EGL14.EGL_NONE), 0
         )
 
         // 进入GL上下文
@@ -138,19 +136,19 @@ class OpenGLImageViewModel3(application: Application) : AndroidViewModel(applica
         val glTexTransformId = GLES30.glGetUniformLocation(programId, "textureTransform")
         GLES30.glUniformMatrix4fv(glTexTransformId, 1, false, emptyMtx, 0)
 
-        val width: Int
-        val height: Int
-        if (textureView.width > textureView.height) {
-            width = textureView.height * bitmap.width / bitmap.height
-            height = textureView.height
+        val viewPortWidth: Int
+        val viewPortHeight: Int
+        if (width > height) {
+            viewPortWidth = height * bitmap.width / bitmap.height
+            viewPortHeight = height
         } else {
-            width = textureView.width
-            height = textureView.width * bitmap.height / bitmap.width
+            viewPortWidth = width
+            viewPortHeight = width * bitmap.height / bitmap.width
         }
-        val y = (textureView.height - height) / 2
-        val x = (textureView.width - width) / 2
+        val y = (height - viewPortHeight) / 2
+        val x = (width - viewPortWidth) / 2
 
-        GLES30.glViewport(x, y, width, height)
+        GLES30.glViewport(x, y, viewPortWidth, viewPortHeight)
 
         // 绘制纹理
         GLES30.glDrawArrays(GLES30.GL_TRIANGLE_STRIP, 0, 4)
