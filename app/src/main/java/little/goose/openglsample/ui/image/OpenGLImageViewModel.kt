@@ -213,7 +213,7 @@ class OpenGLImageViewModel(application: Application) : AndroidViewModel(applicat
         private val RGB_FRAGMENT_SHADER_CODE = """
             #version 300 es
             precision mediump float;
-            in highp vec2 textureCoordinate;
+            in vec2 textureCoordinate;
             uniform sampler2D inputImageTexture;
             out vec4 fragColor;
             void main()

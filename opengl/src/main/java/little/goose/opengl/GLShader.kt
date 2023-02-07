@@ -144,7 +144,7 @@ sealed class GLShader(
             #extension GL_OES_EGL_image_external_essl3: require
             precision mediump float;
             layout(location = 0) uniform samplerExternalOES inputImageTexture;
-            in highp vec2 textureCoordinate;
+            in vec2 textureCoordinate;
             out vec4 fragColor;
             void main()
             {
@@ -155,7 +155,7 @@ sealed class GLShader(
         val RGB_FRAGMENT_SHADER_CODE = """
             #version 300 es
             precision mediump float;
-            in highp vec2 textureCoordinate;
+            in vec2 textureCoordinate;
             uniform sampler2D inputImageTexture;
             out vec4 fragColor;
             void main()

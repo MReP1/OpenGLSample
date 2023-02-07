@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory
 import android.graphics.SurfaceTexture
 import android.opengl.*
 import android.opengl.EGLExt.EGL_RECORDABLE_ANDROID
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import little.goose.openglsample.R
 import java.nio.ByteBuffer
@@ -231,7 +232,7 @@ class OpenGLImageViewModel3(application: Application) : AndroidViewModel(applica
         private val RGB_FRAGMENT_SHADER_CODE = """
             #version 300 es
             precision mediump float;
-            in highp vec2 textureCoordinate;
+            in vec2 textureCoordinate;
             uniform sampler2D inputImageTexture;
             out vec4 fragColor;
             void main()
