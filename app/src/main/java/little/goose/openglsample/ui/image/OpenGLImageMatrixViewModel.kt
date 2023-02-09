@@ -5,14 +5,13 @@ import android.graphics.BitmapFactory
 import android.graphics.SurfaceTexture
 import android.opengl.*
 import android.opengl.EGLExt.EGL_RECORDABLE_ANDROID
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import little.goose.openglsample.R
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
 
-class OpenGLImageViewModel3(application: Application) : AndroidViewModel(application) {
+class OpenGLImageMatrixViewModel(application: Application) : AndroidViewModel(application) {
 
     private val bitmap = BitmapFactory.decodeResource(application.resources, R.drawable.cat)
     private val byteBuffer = ByteBuffer.allocateDirect(bitmap.byteCount).apply {
@@ -116,15 +115,15 @@ class OpenGLImageViewModel3(application: Application) : AndroidViewModel(applica
         )
 
         // 绑定纹理
-        val emptyMtx = floatArrayOf(
+        val identityMtx = floatArrayOf(
             1.0f, 0.0f, 0.0f, 0.0f,
             0.0f, 1.0f, 0.0f, 0.0f,
             0.0f, 0.0f, 1.0f, 0.0f,
             0.0f, 0.0f, 0.0f, 1.0f
         )
 
-        Matrix.scaleM(emptyMtx, 0, 1f, -1f, 1f)
-        Matrix.translateM(emptyMtx, 0, 0f, -1f, 0f)
+        Matrix.scaleM(identityMtx, 0, 1f, -1f, 1f)
+        Matrix.translateM(identityMtx, 0, 0f, -1f, 0f)
 
         GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
         GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, textureId)
@@ -135,7 +134,7 @@ class OpenGLImageViewModel3(application: Application) : AndroidViewModel(applica
 
         // 将矩阵传入着色器uniform变量
         val glTexTransformId = GLES30.glGetUniformLocation(programId, "textureTransform")
-        GLES30.glUniformMatrix4fv(glTexTransformId, 1, false, emptyMtx, 0)
+        GLES30.glUniformMatrix4fv(glTexTransformId, 1, false, identityMtx, 0)
 
         val viewPortWidth: Int
         val viewPortHeight: Int

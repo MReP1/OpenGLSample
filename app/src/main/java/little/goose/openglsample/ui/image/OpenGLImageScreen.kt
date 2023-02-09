@@ -9,7 +9,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun OpenGLImageScreen(modifier: Modifier = Modifier) {
-    val viewModel = viewModel<OpenGLImageViewModel3>()
+    val viewModel = viewModel<OpenGLImageMatrixViewModel>()
     AndroidView(
         factory = { TextureView(it) },
         modifier = modifier
