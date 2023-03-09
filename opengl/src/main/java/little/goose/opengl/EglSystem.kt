@@ -70,6 +70,10 @@ class EglSystem(
         detachCurrent()
     }
 
+    fun setTimestamp(timestamp: Long) {
+        EGLExt.eglPresentationTimeANDROID(eglDisplay, eglSurface, timestamp)
+    }
+
     fun release() {
         if (eglDisplay != EGL14.EGL_NO_DISPLAY) {
             if (eglSurface != EGL14.EGL_NO_SURFACE) {
