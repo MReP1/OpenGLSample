@@ -7,7 +7,6 @@ import android.media.MediaFormat
 import android.media.MediaMuxer
 import android.os.Handler
 import android.os.HandlerThread
-import android.util.Log
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.android.HandlerDispatcher
@@ -39,8 +38,7 @@ class VideoEncoder {
     private var _eglSystem: EglSystem? = null
     private val eglSystem get() = _eglSystem!!
 
-    private var _shader: RGBShader? = null
-    private val shader get() = _shader!!
+    private val shader by lazy { RGBShader() }
 
     private var _encoderThread: HandlerThread? = null
     private val encoderThread get() = _encoderThread!!
@@ -60,11 +58,16 @@ class VideoEncoder {
     private val bufferInfo by lazy { BufferInfo() }
 
     private val exceptionHandler by lazy {
-        CoroutineExceptionHandler { _, exc -> Log.e("VideoEncoder", exc.message.toString()) }
+        CoroutineExceptionHandler { _, exc ->
+            exc.printStackTrace()
+        }
     }
+
+    private lateinit var config: VideoEncoderConfig
 
     @Suppress("BlockingMethodInNonBlockingContext")
     suspend fun init(config: VideoEncoderConfig) = suspendCoroutine { cont ->
+        this.config = config
         val thread = HandlerThread("VideoEncoder").apply { start() }.also { _encoderThread = it }
         val handler = Handler(thread.looper).also { _encoderHandler = it }
         val dispatcher = handler.asCoroutineDispatcher().also { _handlerDispatcher = it }
@@ -96,27 +99,41 @@ class VideoEncoder {
         }
     }
 
-    fun withGlContext(action: () -> Unit) {
-        eglSystem.withCurrent { action() }
-    }
-
-    fun encodeFrame(texture: Int, width: Int, height: Int, timestamp: Long) {
-        if (state != State.RUNNING) return
+    suspend fun withGlContext(action: suspend () -> Unit) = suspendCoroutine { cont ->
         coroutineScope.launch(handlerDispatcher) {
-            if (state != State.RUNNING) return@launch
-            eglSystem.makeCurrent()
-            shader.drawFrom(texture, 0, 0, width, height)
-            eglSystem.setTimestamp(timestamp)
-            eglSystem.swapBuffers()
-            dequeueEncode()
+            eglSystem.withCurrent { action() }
+            cont.resume(Unit)
         }
     }
 
-    fun stopEncode() {
-        if (state != State.RUNNING) return
-        coroutineScope.launch(handlerDispatcher) {
-            if (state != State.RUNNING) return@launch
-            mediaCodec.signalEndOfInputStream()
+    suspend fun encodeFrame(
+        texture: Int, width: Int, height: Int, timestamp: Long
+    ) = suspendCoroutine { cont ->
+        // TODO size 转化
+        if (state != State.RUNNING) cont.resume(Unit) else {
+            coroutineScope.launch(handlerDispatcher) {
+                if (state != State.RUNNING) return@launch
+                eglSystem.makeCurrent()
+                shader.drawFrom(
+                    texture, 0, 0,
+                    config.width, config.height
+                )
+                eglSystem.setTimestamp(timestamp)
+                eglSystem.swapBuffers()
+                dequeueEncode()
+                cont.resume(Unit)
+            }
+        }
+    }
+
+    suspend fun stopEncode() = suspendCoroutine { cont ->
+        if (state != State.RUNNING) cont.resume(Unit) else {
+            coroutineScope.launch(handlerDispatcher) {
+                if (state != State.RUNNING) return@launch
+                mediaCodec.signalEndOfInputStream()
+                dequeueEncode()
+                cont.resume(Unit)
+            }
         }
     }
 
@@ -125,14 +142,14 @@ class VideoEncoder {
         while (index >= 0) {
             if (bufferInfo.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG != 0) {
                 mediaCodec.releaseOutputBuffer(index, false)
-                continue
             } else if (bufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) {
                 break
+            } else {
+                mediaCodec.getOutputBuffer(index)?.let { outputBuffer ->
+                    handleEncodeVideoFrame(mediaCodec.outputFormat, outputBuffer, bufferInfo)
+                }
+                mediaCodec.releaseOutputBuffer(index, false)
             }
-            mediaCodec.getOutputBuffer(index)?.let { outputBuffer ->
-                handleEncodeVideoFrame(mediaCodec.outputFormat, outputBuffer, bufferInfo)
-            }
-            mediaCodec.releaseOutputBuffer(index, false)
             index = mediaCodec.dequeueOutputBuffer(bufferInfo, 0)
         }
     }
@@ -156,19 +173,15 @@ class VideoEncoder {
         state = State.DESTROYED
         suspendCoroutine { cont ->
             _coroutineScope?.launch(handlerDispatcher) {
-                _shader?.release()
-                _shader = null
+                _eglSystem?.makeCurrent()
+                _mediaMuxer?.apply { stop(); release() }
+                _mediaMuxer = null
+                _mediaCodec?.apply { stop(); release() }
+                _mediaCodec = null
+                shader.release()
+                _eglSystem?.detachCurrent()
                 _eglSystem?.release()
                 _eglSystem = null
-                _mediaCodec?.apply {
-                    stop()
-                    release()
-                }
-                _mediaCodec = null
-                _mediaMuxer?.apply {
-                    stop()
-                    release()
-                }
                 cont.resume(Unit)
             }
         }

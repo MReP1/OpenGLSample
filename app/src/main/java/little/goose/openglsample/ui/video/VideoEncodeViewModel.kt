@@ -5,7 +5,6 @@ import android.graphics.BitmapFactory
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
-import little.goose.opengl.EglSystem
 import little.goose.opengl.GLUtils
 import little.goose.openglsample.R
 import little.goose.openglsample.logic.video.VideoEncoder
@@ -24,7 +23,7 @@ class VideoEncodeViewModel(
         rewind()
     }
 
-    init {
+    fun encode() {
         viewModelScope.launch {
             encoder.init(
                 VideoEncoderConfig(
@@ -36,11 +35,17 @@ class VideoEncodeViewModel(
             )
             for (i in 0 until 100) {
                 encoder.withGlContext {
-                    val texture =
-                        GLUtils.generate2DTextureId(bitmap.width, bitmap.height, byteBuffer)
-                    encoder.encodeFrame(texture, bitmap.width, bitmap.height /*FIXME*/)
+                    val texture = GLUtils.generate2DTextureId(
+                        bitmap.width, bitmap.height, byteBuffer
+                    )
+                    encoder.encodeFrame(
+                        texture, bitmap.width, bitmap.height, 100 * i * 1000000L
+                    )
+                    GLUtils.deleteTexture(texture)
                 }
             }
+            encoder.stopEncode()
+            encoder.release()
         }
     }
 
