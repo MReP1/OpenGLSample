@@ -38,7 +38,8 @@ class VideoEncoder {
     private var _eglSystem: EglSystem? = null
     private val eglSystem get() = _eglSystem!!
 
-    private val shader by lazy { RGBShader() }
+    private var _shader: RGBShader? = null
+    private val shader get() = _shader!!
 
     private var _encoderThread: HandlerThread? = null
     private val encoderThread get() = _encoderThread!!
@@ -113,6 +114,9 @@ class VideoEncoder {
         if (state != State.RUNNING) cont.resume(Unit) else {
             coroutineScope.launch(handlerDispatcher) {
                 if (state != State.RUNNING) return@launch
+                if (_shader == null) {
+                    _shader = RGBShader()
+                }
                 eglSystem.makeCurrent()
                 shader.drawFrom(
                     texture, 0, 0,
