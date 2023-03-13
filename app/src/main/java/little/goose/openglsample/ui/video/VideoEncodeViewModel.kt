@@ -4,6 +4,7 @@ import android.app.Application
 import android.graphics.BitmapFactory
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import little.goose.opengl.GLUtils
 import little.goose.openglsample.R
@@ -24,7 +25,7 @@ class VideoEncodeViewModel(
     }
 
     fun encode() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.Default) {
             encoder.init(
                 VideoEncoderConfig(
                     outPutPath = File(
