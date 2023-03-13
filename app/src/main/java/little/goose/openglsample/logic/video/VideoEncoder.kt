@@ -19,6 +19,7 @@ import java.io.File
 import java.nio.ByteBuffer
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
+import kotlin.math.roundToInt
 
 class VideoEncoder {
 
@@ -28,6 +29,8 @@ class VideoEncoder {
 
     @Volatile
     private var state: State = State.Uninitialized
+
+    private var presentationTimeUs = 0L
 
     private var isMuxerStated = false
     private var trackIndex = 0
@@ -42,10 +45,8 @@ class VideoEncoder {
     private val shader get() = _shader!!
 
     private var _encoderThread: HandlerThread? = null
-    private val encoderThread get() = _encoderThread!!
 
     private var _encoderHandler: Handler? = null
-    private val encoderHandler get() = _encoderHandler!!
 
     private var _handlerDispatcher: HandlerDispatcher? = null
     private val handlerDispatcher get() = _handlerDispatcher!!
@@ -107,22 +108,30 @@ class VideoEncoder {
         }
     }
 
-    suspend fun encodeFrame(
-        texture: Int, width: Int, height: Int, timestamp: Long
-    ) = suspendCoroutine { cont ->
-        // TODO size 转化
+    suspend fun encodeFrame(texture: Int, width: Int, height: Int) = suspendCoroutine { cont ->
         if (state != State.RUNNING) cont.resume(Unit) else {
             coroutineScope.launch(handlerDispatcher) {
                 if (state != State.RUNNING) return@launch
+                eglSystem.makeCurrent()
                 if (_shader == null) {
                     _shader = RGBShader()
                 }
-                eglSystem.makeCurrent()
-                shader.drawFrom(
-                    texture, 0, 0,
-                    config.width, config.height
-                )
-                eglSystem.setTimestamp(timestamp)
+                val realWidth: Int
+                val realHeight: Int
+                if (config.width > config.height) {
+                    val ratio = width.toFloat() / height.toFloat()
+                    realHeight = config.height
+                    realWidth = (config.height * ratio).roundToInt()
+                } else {
+                    val ratio = height.toFloat() / width.toFloat()
+                    realWidth = config.width
+                    realHeight = (config.width * ratio).roundToInt()
+                }
+                val viewportX = (config.width - realWidth) / 2
+                val viewportY = (config.height - realHeight) / 2
+                shader.drawFrom(texture, viewportX, viewportY, realWidth, realHeight)
+                eglSystem.setTimestamp(presentationTimeUs)
+                presentationTimeUs += (1000 / config.frameRate) * 1000000L
                 eglSystem.swapBuffers()
                 dequeueEncode()
                 cont.resume(Unit)
@@ -180,16 +189,17 @@ class VideoEncoder {
                 _eglSystem?.makeCurrent()
                 _mediaMuxer?.apply { stop(); release() }
                 _mediaMuxer = null
+                isMuxerStated = false
                 _mediaCodec?.apply { stop(); release() }
                 _mediaCodec = null
-                shader.release()
+                _shader?.release()
+                _shader = null
                 _eglSystem?.detachCurrent()
                 _eglSystem?.release()
                 _eglSystem = null
                 cont.resume(Unit)
             }
         }
-        isMuxerStated = false
         _coroutineScope?.cancel()
         _coroutineScope = null
         _handlerDispatcher?.cancel()

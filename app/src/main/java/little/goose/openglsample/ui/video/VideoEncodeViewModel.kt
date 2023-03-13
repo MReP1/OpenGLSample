@@ -33,16 +33,15 @@ class VideoEncodeViewModel(
                     ).path
                 )
             )
+            var texture = 0
+            encoder.withGlContext {
+                texture = GLUtils.generate2DTextureId(bitmap.width, bitmap.height, byteBuffer)
+            }
             for (i in 0 until 100) {
-                encoder.withGlContext {
-                    val texture = GLUtils.generate2DTextureId(
-                        bitmap.width, bitmap.height, byteBuffer
-                    )
-                    encoder.encodeFrame(
-                        texture, bitmap.width, bitmap.height, 100 * i * 1000000L
-                    )
-                    GLUtils.deleteTexture(texture)
-                }
+                encoder.encodeFrame(texture, bitmap.width, bitmap.height)
+            }
+            encoder.withGlContext {
+                GLUtils.deleteTexture(texture)
             }
             encoder.stopEncode()
             encoder.release()
