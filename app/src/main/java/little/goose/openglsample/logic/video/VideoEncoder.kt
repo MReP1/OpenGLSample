@@ -143,6 +143,7 @@ class VideoEncoder {
         if (state != State.RUNNING) cont.resume(Unit) else {
             coroutineScope.launch(handlerDispatcher) {
                 if (state != State.RUNNING) return@launch
+                presentationTimeUs = 0
                 mediaCodec.signalEndOfInputStream()
                 dequeueEncode()
                 cont.resume(Unit)
@@ -190,6 +191,7 @@ class VideoEncoder {
                 _mediaMuxer?.apply { stop(); release() }
                 _mediaMuxer = null
                 isMuxerStated = false
+                presentationTimeUs = 0
                 _mediaCodec?.apply { stop(); release() }
                 _mediaCodec = null
                 _shader?.release()
